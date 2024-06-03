@@ -45,3 +45,94 @@ impl FromStr for AccountNumber {
         }
     }
 }
+
+
+// for printing account number with display trait 
+impl Display for AccountNumber {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut account_number: String = self.payload.iter().map(|d| d.to_string()).collect();
+        account_number.push_str(&self.check_digit.to_string());
+        write!(f, "{}", account_number)
+    }
+}
+
+
+//Implementing methods unique to account number
+impl AccountNumber {
+    pub fn new(length: usize) -> Self {
+        let mut payload: Vec<u8> = Vec::new();
+        for _ in 1..=length - 1 {
+            let mut rng = thread_rng();
+            let zero_to_nine: u8 = rng.gen_range(0..=9);
+            payload.push(zero_to_nine);
+        }
+
+        let check_digit = get_check_digit(&payload);
+
+        Self {
+            payload,
+            check_digit,
+        }
+    }
+
+    pub fn check_digit(&self) -> u8 {
+        get_check_digit(&self.payload)
+    }
+
+    pub fn human_readable(&self) -> String {
+        let mut payload: String = self.payload.iter().map(|d| d.to_string()).collect();
+        payload.push_str(&self.check_digit.to_string());
+        payload
+    }
+}
+
+//Helper functions for account number 
+pub fn verify(account_number: &str) -> bool {
+    let account_number = account_number.to_string();
+    let digits: Vec<char> = account_number.trim().chars().collect();
+
+    let mut payload: Vec<u8> = digits
+        .iter()
+        .map(|digit| digit.to_digit(10).expect("Not a number") as u8)
+        .collect();
+
+    let check_digit = payload.pop().expect("This shouldn't be an empty iterator");
+
+    get_check_digit(&payload) == check_digit
+}
+
+//Helper function to get the "Nonce" or check digit to validate the account number
+fn get_check_digit(payload: &[u8]) -> u8 {
+    let mut new_payload = payload.iter().copied();
+    let mut luhn_sum = 0;
+    let mut index = 0;
+
+    while let Some(item) = new_payload.next_back() {
+        let divisible_by_2 = { (index as f32 % 2_f32) == 0_f32 };
+        if divisible_by_2 {
+            let mul = item * 2;
+
+            let digits: Vec<u8> = mul
+                .to_string()
+                .chars()
+                .map(|d| d.to_digit(10).expect("Not a number character") as u8)
+                .collect();
+
+            let sum = {
+                let mut x = 0;
+                for digit in digits {
+                    let y: u8 = digit;
+                    x += y;
+                }
+                x
+            };
+
+            luhn_sum += sum;
+        } else {
+            luhn_sum += item;
+        };
+        index += 1;
+    }
+
+    10 - (luhn_sum % 10)
+}
