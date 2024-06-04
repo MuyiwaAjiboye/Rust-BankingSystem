@@ -15,7 +15,7 @@ pub struct Account {
 }
 
 fn database_path() -> PathBuf {
-    PathBuf::from("bank.s3db")
+    PathBuf::from("Banking-System.db")
 }
 
 pub fn initialise_bankdb() -> Result<Connection> {
@@ -195,6 +195,7 @@ pub fn transfer(
     }
     Ok(())
 }
+
 
 //For withdrawing money from currently active account
 pub fn withdraw(amount: &str, pin: &str, account_number: &str) -> Result<()> {
